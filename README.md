@@ -1,4 +1,8 @@
-# Rebuilder
+<p align="center">
+  <img src="replicator-logo.png" alt="Replicator" width="400">
+</p>
+
+# Replicator
 
 Structured process for analyzing legacy applications, producing rebuild and infrastructure migration plans, and generating the agent configurations that carry those standards into development and operations.
 
@@ -6,7 +10,7 @@ Structured process for analyzing legacy applications, producing rebuild and infr
 
 A three-phase workflow for legacy application rebuilds:
 
-1. **Analyze** — Point Cascade at a legacy codebase (and optionally its adjacent repos). It fills out the input documents, runs a 17-step analysis (IDEATION_PROCESS.md), and produces a PRD, architecture decision records, and auto-populated agent configs.
+1. **Analyze** — Point Cascade at a legacy codebase (and optionally its adjacent repos). It fills out the input documents, runs a 18-step analysis (IDEATION_PROCESS.md), and produces a PRD, architecture decision records, and auto-populated agent configs.
 2. **Build** — Create a new repo for the rebuilt application. Copy the populated agent configs into it. Use Cascade with the developer agent instructions to build the service from the PRD.
 3. **Operate** — Deploy the SRE agent. It receives alerts from your monitoring platform (GCP Cloud Monitoring, New Relic, Datadog, etc.), diagnoses issues using the `/ops/*` endpoints your service exposes, takes safe remediation actions, and escalates to humans via PagerDuty when it cannot confidently resolve an issue.
 
@@ -17,7 +21,7 @@ All rebuilt services follow an **API-first** design — every feature is exposed
 ## Repository Structure
 
 ```
-rebuilder/
+replicator/
 ├── WINDSURF.md                # Migration reference — architecture, data migration, cutover, DR, ADRs
 ├── README.md                  # This file
 ├── scope.md                   # Scope template — copy to a working directory before filling out
@@ -27,7 +31,7 @@ rebuilder/
 ├── .github/
 │   └── copilot-instructions.md  # VS Code Copilot — loads developer-agent/WINDSURF_DEV.md + config.md
 ├── rebuild/
-│   ├── IDEATION_PROCESS.md    # The rebuild analysis process definition (17 steps)
+│   ├── IDEATION_PROCESS.md    # The rebuild analysis process definition (18 steps)
 │   ├── input.md               # Input template — copy to a working directory before filling out
 │   └── run.sh                 # Runner script — creates output structure in the input directory
 ├── rebuild-inputs/            # Per-project working directories (gitignored)
@@ -114,7 +118,7 @@ rebuilder/
 └── .windsurf/
     └── workflows/             # Windsurf workflow definitions
         ├── populate-templates.md
-        └── run-rebuilder.md
+        └── run-replicator.md
 ```
 
 ## How to Use
@@ -124,19 +128,19 @@ rebuilder/
 ```bash
 # Create a working directory for this project and clone the primary legacy repo into it
 # Use a descriptive name — one directory per rebuild project
-mkdir -p rebuilder/rebuild-inputs/my-project
-git clone git@github.com:your-org/my-project.git rebuilder/rebuild-inputs/my-project/repo
+mkdir -p replicator/rebuild-inputs/my-project
+git clone git@github.com:your-org/my-project.git replicator/rebuild-inputs/my-project/repo
 
 # Copy the input templates into the working directory (templates stay clean)
-cp rebuilder/scope.md rebuilder/rebuild-inputs/my-project/scope.md
-cp rebuilder/rebuild/input.md rebuilder/rebuild-inputs/my-project/input.md
+cp replicator/scope.md replicator/rebuild-inputs/my-project/scope.md
+cp replicator/rebuild/input.md replicator/rebuild-inputs/my-project/input.md
 
 # Have Cascade fill them out from the legacy codebase
-cd rebuilder/rebuild-inputs/my-project/repo/
+cd replicator/rebuild-inputs/my-project/repo/
 # Open this directory in Windsurf and ask Cascade:
 # "Read this codebase and fill out ../scope.md and ../input.md"
 # OR
-# " Pleaese rebuild <repo> using rebuilder app with all stages completed"
+# " Pleaese rebuild <repo> using replicator app with all stages completed"
 ```
 
 Cascade examines the legacy code and fills in the guided prompts in both files.
@@ -150,19 +154,19 @@ Cascade examines the legacy code and fills in the guided prompts in both files.
 ```bash
 # Optional — clone related repos that are in scope for the rebuild
 git clone git@github.com:your-org/flask-app-b.git \
-  rebuilder/rebuild-inputs/my-project/adjacent/flask-app-b
+  replicator/rebuild-inputs/my-project/adjacent/flask-app-b
 git clone git@github.com:your-org/shared-auth.git \
-  rebuilder/rebuild-inputs/my-project/adjacent/shared-auth
+  replicator/rebuild-inputs/my-project/adjacent/shared-auth
 
 # Re-run Cascade to update scope.md and input.md with the adjacent repos
-cd rebuilder/rebuild-inputs/my-project/repo/
+cd replicator/rebuild-inputs/my-project/repo/
 # Open this directory in Windsurf and ask Cascade:
 # "Read this codebase and the adjacent repos at ../adjacent/.
 #  Update ../scope.md and ../input.md — fill out the Adjacent Repositories
 #  section and update the dependencies to reflect the integration points
 #  between these repos."
 # OR
-# " Pleaese rebuild <repo> with adjcent <repos> using rebuilder app with all stages completed"
+# " Pleaese rebuild <repo> with adjcent <repos> using replicator app with all stages completed"
 ```
 
 Review `scope.md` again — especially the **Adjacent Repositories** section and updated dependency information. Repos not cloned into `adjacent/` are treated as external services — the rebuild will interact with them through their existing interfaces, not modify them.
@@ -171,12 +175,12 @@ Review `scope.md` again — especially the **Adjacent Repositories** section and
 > You can stop here or continue on to see nuanced individual steps.
 
 ```bash
-# Run the 17-step rebuild analysis
+# Run the 18-step rebuild analysis
 cd ../../rebuild/
 ./run.sh ../rebuild-inputs/my-project
 ```
 
-This invokes Cascade, which reads `IDEATION_PROCESS.md` plus the filled-out `input.md` and `scope.md`, then executes all 17 steps. If adjacent repos are present, it reads those codebases too and analyzes cross-repo integration points. All outputs are written into the project directory.
+This invokes Cascade, which reads `IDEATION_PROCESS.md` plus the filled-out `input.md` and `scope.md`, then executes all 18 steps. If adjacent repos are present, it reads those codebases too and analyzes cross-repo integration points. All outputs are written into the project directory.
 
 ```bash
 # Review the outputs — everything is in the project directory
@@ -198,12 +202,12 @@ git clone git@github.com:your-org/your-new-service.git
 cd your-new-service/
 
 # Copy the populated configs from the project directory into the target repo
-REBUILD=../rebuilder/rebuild-inputs/my-project
-cp ../rebuilder/WINDSURF.md .
+REBUILD=../replicator/rebuild-inputs/my-project
+cp ../replicator/WINDSURF.md .
 cp -r "$REBUILD/developer-agent/" .
 cp -r "$REBUILD/sre-agent/" .
 cp -r "$REBUILD/docs/" .
-cp ../rebuilder/prompting.md .
+cp ../replicator/prompting.md .
 
 # Build the service using the developer agent
 # Open this directory in Windsurf. WINDSURF_DEV.md will be loaded as project rules.

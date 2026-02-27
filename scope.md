@@ -24,7 +24,7 @@
 
 ### Infrastructure
 
-> *Detail the runtime infrastructure. The rebuilder reads code, not cloud consoles — this section provides the infrastructure context the code alone cannot reveal.*
+> *Detail the runtime infrastructure. The replicator reads code, not cloud consoles — this section provides the infrastructure context the code alone cannot reveal.*
 
 | Question | Answer |
 |---|---|

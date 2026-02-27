@@ -1,8 +1,8 @@
 ---
-description: Run the full rebuilder process on a legacy repo. Triggered by "run rebuilder on <repo>" or similar.
+description: Run the full replicator process on a legacy repo. Triggered by "run replicator on <repo>" or similar.
 ---
 
-# Run Rebuilder
+# Run Replicator
 
 This workflow runs the full legacy rebuild process on a project directory.
 
@@ -16,7 +16,7 @@ The project directory must exist under `rebuild-inputs/` with:
 
 ## Steps
 
-1. **Identify the project directory.** The user will say something like "run rebuilder on vizio-automate" or "run rebuilder on orderflow". Map this to the path `rebuild-inputs/<project>/`. Verify `scope.md` and `input.md` exist.
+1. **Identify the project directory.** The user will say something like "run replicator on vizio-automate" or "run replicator on orderflow". Map this to the path `rebuild-inputs/<project>/`. Verify `scope.md` and `input.md` exist.
 
 // turbo
 2. **Create output directories** if they don't already exist:
