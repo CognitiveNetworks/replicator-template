@@ -913,34 +913,35 @@ Write results to `output/summary-of-work.md` using this structure:
 
 ## Overview
 
-[3 paragraph executive summary, structured as follows:
+[Two-column layout using an HTML table. Left column (55%) contains the 3
+executive summary paragraphs. Right column (45%) contains the Key Numbers table.
+This keeps the narrative and metrics side-by-side so executives see both at a
+glance without scrolling.]
 
-Paragraph 1: What the legacy application was, its problems, and why it needed
-rebuilding.
+<table>
+<tr>
+<td width="55%" valign="top">
 
-Paragraph 2: How the rebuild was executed (spec-driven automated process).
+[Paragraph 1: What the legacy application was, its problems, and why it needed
+rebuilding.]
 
-Paragraph 3 ("Bottom line"): Synthesize three things for a non-technical reader:
+[Paragraph 2: How the rebuild was executed (spec-driven automated process).]
+
+[Paragraph 3 ("Bottom line"): Synthesize three things for a non-technical reader:
 (1) how long the rebuild would take a human engineer, (2) how long it actually
 took with AI-driven automation, and (3) why the rebuilt codebase is more
 maintainable going forward (reduced lines, type safety, automated quality gates,
-observability, CI/CD enforcement). This paragraph goes here — before the estimate
-table — so a VP can read the executive summary without scrolling.
+observability, CI/CD enforcement).]
 
-After these paragraphs, include a grounded human time estimate table broken down
-by phase (analysis, architecture/design, implementation, testing, compliance/docs)
-with total engineer-days range. Testing must be its own row — do not bundle it
-into implementation. Cite industry estimation frameworks (e.g., McConnell's
-Code Complete, Capers Jones's Applied Software Measurement) if applicable.
-State the acceleration factor achieved by the automated process.]
+</td>
+<td width="45%" valign="top">
 
-### Key Numbers
+**Key Numbers**
 
-[Summary table of headline metrics — placed here so executives see the numbers
-without scrolling past the detailed estimate table. Include: source lines
-eliminated, code reduction %, dependencies removed, compliance checks passed,
-quality gates passed, test coverage, CVEs, new endpoints, ADRs, total files.
-Measure programmatically — do not estimate.]
+[Summary table of headline metrics. Include: source lines eliminated, code
+reduction %, dependencies removed, compliance checks passed, quality gates
+passed, test coverage, CVEs, new endpoints, ADRs, total files. Measure
+programmatically — do not estimate. Keep metric labels concise for column fit.]
 
 | Metric | Value |
 |--------|-------|
@@ -949,9 +950,18 @@ Measure programmatically — do not estimate.]
 | ... | ... |
 | Total files delivered | [n] |
 
+</td>
+</tr>
+</table>
+
 ### Estimated Human Time Equivalent
 
-[Estimate table goes here — see paragraph guidance above.]
+[Grounded human time estimate table broken down by phase (analysis,
+architecture/design, implementation, testing, compliance/docs) with total
+engineer-days range. Testing must be its own row — do not bundle it into
+implementation. Cite industry estimation frameworks (e.g., McConnell's Code
+Complete, Capers Jones's Applied Software Measurement) if applicable. State the
+acceleration factor achieved by the automated process.]
 
 ## Spec-Driven Approach
 
