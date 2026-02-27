@@ -810,16 +810,37 @@ If any item fails, fix it before proceeding. Do not defer compliance to a follow
 
 After all compliance items pass, run the full quality suite and produce a test results report at `tests/TEST_RESULTS.md`. This file is a machine-verified proof that the codebase passes all quality gates. It must include:
 
-1. **Tool versions** — Python, pytest, linter, formatter, type checker versions used
+**Core Gates (mandatory — all must pass):**
+
+1. **Tool versions** — Python, pytest, linter, formatter, type checker, and all analysis tool versions used
 2. **Codebase metrics** — source file count, source line count, test file count, test line count
 3. **pytest output** — full verbose test output (`pytest -v --tb=short`), with pass/fail summary and breakdown by test suite
 4. **Linter output** — full lint results (e.g., `ruff check .`), must show 0 errors
 5. **Formatter output** — format check results (e.g., `ruff format --check .`), must show all files formatted
 6. **Type checker output** — strict type check results (e.g., `mypy src/`), must show 0 errors
-7. **Quality gate summary table** — one table showing each gate (tests, lint, format, types), threshold, result, and pass/fail status
-8. **Test coverage by module** — which source modules are covered by which test files
-9. **Bugs found and fixed** — any source or test bugs discovered during validation, with before/after descriptions
-10. **Not yet tested** — anything requiring running infrastructure (integration tests, Docker, DAPR sidecar) that cannot be validated offline
+
+**Extended Gates (mandatory — measured baselines or pass/fail):**
+
+7. **Test coverage** — `pytest-cov` with `--cov-report=term-missing` showing line-level coverage per module. Report overall %, identify modules below 50%, and explain gaps (e.g., "services require running Redis"). Pure logic modules should target ≥80%.
+8. **Cyclomatic complexity** — `radon cc src/ -a -s`. Average must be A or B. Any function rated C or higher must be documented with justification.
+9. **Maintainability index** — `radon mi src/ -s`. All files must be rated A or B. Any file rated C or lower must be refactored.
+10. **Dead code detection** — `vulture src/ --min-confidence 80`. Must show 0 findings. Unused code must be removed, not commented out.
+11. **Dependency vulnerabilities** — `pip-audit`. Report all findings. Critical/High CVEs in runtime dependencies must have a documented remediation plan or documented rationale for deferral.
+12. **Docstring coverage** — `interrogate src/ -v`. Report coverage percentage. Identify gaps. Public API functions and classes should have docstrings; thin wrappers and internal helpers may be excluded with justification.
+13. **Duplicate code (DRY)** — `pylint --disable=all --enable=duplicate-code src/` and `npx jscpd src/ --min-lines 5 --min-tokens 50`. Must show < 3% duplication. Any detected clones must be justified (e.g., intentional structural similarity) or refactored.
+14. **Cognitive complexity** — `ruff check src/ --select C901`. Must show 0 issues at default threshold (10).
+
+**Summary and context:**
+
+15. **Quality gate summary table** — one table showing each gate (tests, lint, format, types, coverage, complexity, maintainability, dead code, vulnerabilities, docstrings, duplication, cognitive complexity), threshold, result, and pass/fail status
+16. **Bugs found and fixed** — any source or test bugs discovered during validation, with before/after descriptions
+17. **Not yet tested** — anything requiring running infrastructure (integration tests, Docker, DAPR sidecar) that cannot be validated offline
+
+**Required tools** (install in dev environment):
+```
+pip install pytest-cov radon vulture pip-audit interrogate pylint
+npx jscpd  # Node.js — for copy-paste detection
+```
 
 This file serves as the build's quality receipt. If the report does not exist or shows failures, the build is not complete.
 
