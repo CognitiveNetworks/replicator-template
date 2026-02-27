@@ -192,6 +192,8 @@ Using the legacy assessment from Step 1 and the source code in `repo/`, write a 
 
 This document describes the **current software as it exists today**, not the rebuilt version.
 
+> **Critical constraint:** The component overview must contain **zero references to the target state, the rebuild, or any planned changes.** Do not add blockquotes, notes, or parentheticals about what is being removed, replaced, consolidated, or dropped in the rebuild. If a feature exists in the legacy code today (even if it is deprecated, dead code, or scheduled for removal), describe it as-is. The target state is documented in the PRD, ADRs, and feature parity matrix — not here. This document gives readers a snapshot of the legacy system in its current form so they can understand what exists before reading any rebuild plans.
+
 **Audience:** Someone who has never seen the codebase. Write in plain language. Avoid code snippets. Define domain terms where first used.
 
 **Required Sections:**
@@ -709,6 +711,25 @@ Rules:
 - Include integrations (external APIs, webhooks, data feeds) as a separate section.
 - The matrix must be complete enough to serve as the acceptance checklist for the rebuild.
 
+**Library Transition Mapping:**
+
+When the rebuild replaces a shared library (e.g., cnlib → cntools-dapr, cncontrol → absorbed into target modules), the feature parity matrix must include a **Library Transitions** section that explicitly maps every function or module consumed from the legacy library to its replacement in the target. This prevents the summary of work or dependency cleanup from using language like "removed [library]" without explanation — which creates the impression that functionality was lost.
+
+For each legacy library consumed by the application:
+
+```
+## Library Transitions
+
+| Legacy Library | Legacy Function/Module | Target Replacement | Confirmed |
+|---|---|---|---|
+| [library name] | [function or module used by this app] | [target library or module that provides the same functionality] | [Yes / No — verified in target codebase] |
+```
+
+Rules for library transitions:
+- **Never say "removed" without a replacement.** If a library is replaced, the replacement must be named explicitly. Use language like "replaced by [target]" or "functionality provided by [target]", not just "removed".
+- **Every function consumed must be mapped.** If the legacy app imports `hash_mac()` from cnlib, the matrix must show where that function lives in the target (e.g., `cntools-dapr utils.token_hash.hash_mac()`).
+- **Uncertain replacements must be flagged.** If a replacement is not yet confirmed, use "No" in the Confirmed column and add an acceptance criterion. Do not use hedging language like "if supported" in the target behavior column — either confirm the replacement exists or flag it as a gap.
+
 ### Step 11: Data Migration Mapping
 
 Using the legacy assessment's Data Health section (Step 1) and the PRD's Data Migration Plan (Step 6), produce the schema mapping between legacy and target. Write it to `docs/data-migration-mapping.md` (path provided by the runner).
@@ -956,12 +977,46 @@ programmatically — do not estimate. Keep metric labels concise for column fit.
 
 ### Estimated Human Time Equivalent
 
-[Grounded human time estimate table broken down by phase (analysis,
-architecture/design, implementation, testing, compliance/docs) with total
-engineer-days range. Testing must be its own row — do not bundle it into
-implementation. Cite industry estimation frameworks (e.g., McConnell's Code
-Complete, Capers Jones's Applied Software Measurement) if applicable. State the
-acceleration factor achieved by the automated process.]
+[Grounded human time estimate with **two engineer profiles**: a senior engineer
+already familiar with the legacy codebase ("Familiar Engineer") and an engineer
+new to the codebase who must first build context ("Unfamiliar Engineer"). Both
+assume full-time work (8h days). This dual-column format is required for every
+rebuild to give stakeholders an honest range.
+
+Use this exact table structure:]
+
+| Phase | Deliverables | Familiar Engineer | Unfamiliar Engineer | Basis |
+|-------|-------------|-------------------|---------------------|-------|
+| **Legacy analysis** (Steps 1–3) | [artifacts produced] | **[n–n days]** | **[n–n days]** | [justification with LOC counts, file counts, domain complexity. Cite review rate references.¹] |
+| **Architecture & design** (Steps 4–8) | [artifacts produced] | **[n–n days]** | **[n–n days]** | [justification citing ADR count, PRD complexity, agent config work. Explain why unfamiliar takes longer.²] |
+| **Feature parity & data mapping** (Steps 9–10) | [artifacts produced] | **[n–n days]** | **[n–n days]** | [justification citing feature count, data store complexity, library transition mapping.] |
+| **Implementation** | [file count, line count, module count] | **[n–n days]** | **[n–n days]** | [justification citing production LOC and productivity references.³] |
+| **Testing** | [test file count, test count, quality gate count] | **[n–n days]** | **[n–n days]** | [justification citing test LOC, fixture design complexity, quality gate configuration.⁴] |
+| **Compliance & docs** (Steps 11–15) | [audit scope, doc count] | **[n–n days]** | **[n–n days]** | [justification citing compliance check count, cross-referencing effort.] |
+| **Total** | **[total files]** | **[n–n days]** | **[n–n days]** | **[~n–n weeks (familiar) / ~n–n weeks (unfamiliar)]** |
+
+[After the table, state:]
+- The AI-driven pipeline compressed this into [timeframe] of human oversight
+- **Estimated acceleration:** [n–n×] for familiar, [n–n×] for unfamiliar
+- Human role shifted from execution to review and judgment
+
+[Include numbered footnotes citing industry estimation frameworks. Required citations:]
+
+> ¹ McConnell, Steve. *Code Complete* (2004), Ch. 20 — code review rates
+> and unfamiliarity overhead.
+>
+> ² Jones, Capers. *Applied Software Measurement* (2008) — architectural
+> decision productivity and domain familiarity impact.
+>
+> ³ Jones, Capers. *Applied Software Measurement* (2008) — lines per day
+> for experienced (100–150) vs. unfamiliar (50–80) engineers.
+>
+> ⁴ Meszaros, Gerard. *xUnit Test Patterns* (2007) — test design effort
+> multiplier for services with external dependencies.
+
+[Do not use a single "Engineer-Days" column. The dual-column format is mandatory
+to show stakehold­ers the range of effort depending on team familiarity. This
+ensures consistency across all rebuild summaries.]
 
 ## Spec-Driven Approach
 
@@ -1004,9 +1059,9 @@ and compliance standards were defined before code was written.]
 ## Dependency Cleanup
 
 ### Removed
-| Dependency | Issue |
-|---|---|
-| [name] | [reason — e.g., deprecated since YYYY, unmaintained, Python 2 compat] |
+| Dependency | Issue | Replacement |
+|---|---|---|
+| [name] | [reason — e.g., deprecated since YYYY, unmaintained, Python 2 compat] | [what replaced it — e.g., "cntools-dapr (MCPService, TVCService, etc.)" or "functionality absorbed into target modules". **Never leave blank** — every removed dependency must state its replacement or "No replacement needed (dead code)".] |
 
 ### Current
 | Dependency | Version | Purpose |
