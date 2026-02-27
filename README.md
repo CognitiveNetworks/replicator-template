@@ -23,6 +23,9 @@ rebuilder/
 ├── scope.md                   # Scope template — copy to a working directory before filling out
 ├── prompting.md               # Audit trail of prompting commands and outcomes
 ├── .gitignore                 # Python, Terraform, IDE, OS ignores + rebuild-inputs/
+├── .windsurfrules             # Windsurf IDE — loads developer-agent/WINDSURF_DEV.md + config.md
+├── .github/
+│   └── copilot-instructions.md  # VS Code Copilot — loads developer-agent/WINDSURF_DEV.md + config.md
 ├── rebuild/
 │   ├── IDEATION_PROCESS.md    # The rebuild analysis process definition (17 steps)
 │   ├── input.md               # Input template — copy to a working directory before filling out
@@ -34,25 +37,26 @@ rebuilder/
 │       │   └── <related-repo>/
 │       ├── scope.md                      # Filled-out scope
 │       ├── input.md                      # Filled-out input
-│       ├── output/                       # Steps 1-6, 17: analysis artifacts, PRD, and summary
+│       ├── output/                       # Steps 1-5: analysis artifacts and PRD
 │       │   ├── legacy_assessment.md
 │       │   ├── modernization_opportunities.md
 │       │   ├── feasibility.md
 │       │   ├── candidate_N.md
 │       │   ├── prd.md
-│       │   └── summary-of-work.md
-│       ├── developer-agent/              # Step 8: populated dev agent config
+│       │   ├── summary-of-work.md         # Build summary — what was built, commits, quality gates
+│       │   ├── compliance-audit.md        # Compliance audit results
+│       │   └── process-feedback.md        # Process improvement notes
+│       ├── developer-agent/              # Step 7: populated dev agent config
 │       │   ├── WINDSURF_DEV.md
 │       │   └── config.md
-│       ├── sre-agent/                    # Step 7: populated SRE agent config
+│       ├── sre-agent/                    # Step 6: populated SRE agent config
 │       │   ├── WINDSURF_SRE.md
 │       │   └── config.md
 │       └── docs/
-│           ├── component-overview.md      # Step 2: plain-language component overview
-│           ├── adr/                      # Step 9: architecture decision records
+│           ├── adr/                      # Step 8: architecture decision records
 │           │   └── *.md
-│           ├── feature-parity.md         # Step 10: feature parity matrix
-│           ├── data-migration-mapping.md  # Step 11: schema mapping
+│           ├── feature-parity.md         # Step 9: feature parity matrix
+│           ├── data-migration-mapping.md  # Step 10: schema mapping
 │           ├── cutover-report.md         # Template — filled post-cutover
 │           └── disaster-recovery.md      # Template — filled during ops setup
 ├── docs/                      # Migration planning document templates
@@ -67,7 +71,10 @@ rebuilder/
 ├── developer-agent/
 │   ├── README.md              # Developer agent overview
 │   ├── WINDSURF_DEV.md        # Daily dev instructions template — coding, testing, CI/CD, environments, bootstrap
-│   └── config.md              # Per-project config template — commands, environments, services, CI/CD
+│   ├── config.md              # Per-project config template — commands, environments, services, CI/CD
+│   ├── .windsurfrules         # Windsurf IDE hook — reads WINDSURF_DEV.md + config.md on session start
+│   └── .github/
+│       └── copilot-instructions.md  # VS Code Copilot hook
 ├── sre-agent/
 │   ├── README.md              # SRE agent overview
 │   ├── WINDSURF_SRE.md        # SRE agent instructions template — diagnostic workflow and response framework
@@ -77,6 +84,7 @@ rebuilder/
 │   │   ├── high-latency.md
 │   │   ├── dependency-failure.md
 │   │   ├── saturation.md
+│   │   ├── service-down.md
 │   │   └── certificate-expiry.md
 │   ├── incidents/             # Agent-written incident reports
 │   │   └── .gitkeep
@@ -90,6 +98,8 @@ rebuilder/
 │       ├── models.py          # Pydantic models for alert payloads
 │       ├── state.py           # Runtime state tracking for Golden Signals
 │       ├── telemetry.py       # OpenTelemetry instruments
+│       ├── pagerduty_setup.py # PagerDuty service/escalation bootstrapper
+│       ├── deploy.sh          # Deployment script
 │       ├── requirements.txt   # Python dependencies
 │       ├── requirements-dev.txt # Dev dependencies — pytest, ruff
 │       ├── pyproject.toml     # Linter and test configuration
@@ -99,7 +109,12 @@ rebuilder/
 │       └── terraform/         # Cloud Run deployment
 │           ├── main.tf
 │           ├── variables.tf
-│           └── outputs.tf
+│           ├── outputs.tf
+│           └── deploy.auto.tfvars
+└── .windsurf/
+    └── workflows/             # Windsurf workflow definitions
+        ├── populate-templates.md
+        └── run-rebuilder.md
 ```
 
 ## How to Use
@@ -214,8 +229,9 @@ All outputs are written into the project directory under `rebuild-inputs/<projec
 | Feasibility analysis | `output/feasibility.md` | Effort, risk, dependencies, rollback per opportunity |
 | Rebuild candidates | `output/candidate_N.md` | Concrete proposals with stack choices, phased scope, infrastructure migration plan, and DAPR integration notes |
 | PRD | `output/prd.md` | Product requirements including infrastructure migration plan and DAPR integration if changing providers |
-| Component overview | `docs/component-overview.md` | Plain-language overview of the current application for non-developer audiences |
-| Summary of work | `output/summary-of-work.md` | Executive summary with codebase metrics, health scorecard, compliance results, and file inventory |
+| Summary of work | `output/summary-of-work.md` | Build summary — what was built, commits, quality gates |
+| Compliance audit | `output/compliance-audit.md` | Compliance audit results |
+| Process feedback | `output/process-feedback.md` | Process improvement notes |
 | ADRs | `docs/adr/*.md` | Architecture decision records |
 | Feature parity matrix | `docs/feature-parity.md` | Every feature cataloged with rebuild status |
 | Data migration mapping | `docs/data-migration-mapping.md` | Schema mapping between legacy and target |
@@ -240,7 +256,7 @@ The `developer-agent/` directory contains the daily development instructions for
 - **`config.md`** — per-project configuration: dev commands, CI/CD pipeline, environments, services, secrets references, monitoring links.
 
 > [!TIP]
-> **How it connects to the rebuild:** The rebuild process (`run.sh`) auto-populates `WINDSURF_DEV.md` and `config.md` from the PRD and chosen rebuild candidate (Step 8). Project name, architecture, development commands, CI/CD pipeline, Terraform settings, and observability config are filled in before the first line of code is written. Copy both files into the target repo, and Cascade will follow the standards defined by the rebuild process.
+> **How it connects to the rebuild:** The rebuild process (`run.sh`) auto-populates `WINDSURF_DEV.md` and `config.md` from the PRD and chosen rebuild candidate (Step 7). Project name, architecture, development commands, CI/CD pipeline, Terraform settings, and observability config are filled in before the first line of code is written. Copy both files into the target repo, and Cascade will follow the standards defined by the rebuild process.
 
 ## SRE Agent
 
@@ -263,6 +279,5 @@ The `sre-agent/` directory contains a complete, deployable SRE agent that provid
 - **`runtime/`** — the deployable Python/FastAPI service. Receives monitoring platform webhooks, runs the agentic loop, executes tool calls, and escalates to PagerDuty when needed. Includes alert intake pipeline, token budget controls, OpenTelemetry instrumentation, Dockerfile, and Terraform templates for Cloud Run. See `sre-agent/runtime/README.md` for setup and deployment.
 
 > [!TIP]
-> **How it connects to the rebuild:** The rebuild process (`run.sh`) auto-configures the agent's tech stack from the chosen rebuild candidate (Step 7). Your rebuilt services expose `/ops/*` endpoints as defined in `WINDSURF.md`. The agent uses those endpoints to monitor and respond to incidents. Fill in `config.md` with your service URLs, PagerDuty escalation config, and escalation contacts, deploy the runtime, and the agent is operational.
-
+> **How it connects to the rebuild:** The rebuild process (`run.sh`) auto-configures the agent's tech stack from the chosen rebuild candidate (Step 6). Your rebuilt services expose `/ops/*` endpoints as defined in `WINDSURF.md`. The agent uses those endpoints to monitor and respond to incidents. Fill in `config.md` with your service URLs, PagerDuty escalation config, and escalation contacts, deploy the runtime, and the agent is operational.
 

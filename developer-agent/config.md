@@ -13,6 +13,7 @@
 ## Development Commands
 
 > Commands the agent uses to build, test, lint, and run the project locally.
+> Use `N/A — [reason]` for commands that don't apply (e.g., `N/A — no application database`).
 
 | Command | Purpose |
 |---|---|
