@@ -897,7 +897,61 @@ Documentation must include:
 - Example `gcloud monitoring` (or equivalent) commands for platform metrics
 - A table or explanation distinguishing what each measures and when to use which
 
-### Step 15: Container Build for Cloud Targets
+### Step 15: Target Architecture Documentation
+
+After completing the code, tests, and observability, produce a standalone
+architecture document that describes the **end state** of the rebuilt service.
+This document is for architects, team leads, and engineers who need to
+understand how the rebuilt system works without reading source code.
+
+Write results to `docs/target-architecture.md` using this structure:
+
+1. **What Changed** — Table mapping each legacy component to its target module.
+   Include what each module does. Make the consolidation explicit.
+
+2. **System Architecture** — Full component diagram (ASCII) showing:
+   - External callers (TVs, admin tools, internal services)
+   - Entry points (load balancer, endpoints grouped by auth model)
+   - Domain modules inside the service
+   - Shared library layer (if applicable — e.g., cntools-dapr)
+   - Infrastructure integration (DAPR sidecar, Redis, Kafka, etc.)
+   - Clear separation of what goes through the sidecar vs. direct connections
+
+3. **Data Flow Diagrams** — One ASCII sequence diagram per major request flow.
+   Show the caller, the service layer, any library calls, and the data store
+   interactions. Include at minimum:
+   - The primary read path (most common request)
+   - The primary write path
+   - Any async/event-driven flows (pub/sub, queues)
+   - Any auth-gated flows (admin, internal tools)
+
+4. **Library Relationship** (if applicable) — When the service depends on a
+   shared library (e.g., cntools-dapr), explain:
+   - How it is consumed (library import vs. HTTP)
+   - What it provides (service classes, connection pooling, config, utilities)
+   - Why this consumption model was chosen (reference relevant ADR)
+   - Diagram showing the in-process boundary between app code and library code
+
+5. **What Changed and What Didn't** — Table comparing legacy vs. target across
+   dimensions: deployable units, repos, data stores, URL paths, response
+   formats, connection management, message queues, frameworks, auth, shared
+   libraries, observability, IaC, containers, health checks, diagnostics.
+
+6. **Deployment Architecture** — Diagram showing the container runtime,
+   sidecar, probes, and how the service is exposed.
+
+7. **Features Intentionally Removed** — Table of legacy features not carried
+   forward, with justification and ADR reference for each.
+
+8. **Related Documents** — Links to component overview (legacy), feature
+   parity, PRD, relevant ADRs, observability docs, and data migration mapping.
+
+**Critical constraint:** This document describes the **target state only** —
+what the rebuilt service looks like and how it works. For the legacy state,
+reference `docs/component-overview.md`. Do not mix legacy description into
+this document beyond the comparison table.
+
+### Step 16: Container Build for Cloud Targets
 
 When building container images for cloud deployment (Cloud Run, ECS, GKE, etc.):
 
@@ -910,7 +964,7 @@ Example:
 docker build --platform linux/amd64 -t <registry>/<service>:<commit-sha> .
 ```
 
-### Step 16: Process Feedback Capture
+### Step 17: Process Feedback Capture
 
 At the end of every rebuild session where the operator provided manual corrections, instructions, or clarifications that the process did not cover:
 
@@ -921,7 +975,7 @@ At the end of every rebuild session where the operator provided manual correctio
 
 **The rebuild process is a living document.** Every manual correction is evidence of a process gap. If an operator has to tell you something that should have been in the process, the process is incomplete.
 
-### Step 17: Summary of Work
+### Step 18: Summary of Work
 
 After all previous steps are complete, generate a single summary document that communicates the value and scope of the rebuild at a glance. This document is for stakeholders, leadership, and teams evaluating the rebuild approach.
 
@@ -992,7 +1046,7 @@ Use this exact table structure:]
 | **Feature parity & data mapping** (Steps 9–10) | [artifacts produced] | **[n–n days]** | **[n–n days]** | [justification citing feature count, data store complexity, library transition mapping.] |
 | **Implementation** | [file count, line count, module count] | **[n–n days]** | **[n–n days]** | [justification citing production LOC and productivity references.³] |
 | **Testing** | [test file count, test count, quality gate count] | **[n–n days]** | **[n–n days]** | [justification citing test LOC, fixture design complexity, quality gate configuration.⁴] |
-| **Compliance & docs** (Steps 11–15) | [audit scope, doc count] | **[n–n days]** | **[n–n days]** | [justification citing compliance check count, cross-referencing effort.] |
+| **Compliance & docs** (Steps 11–16) | [audit scope, doc count] | **[n–n days]** | **[n–n days]** | [justification citing compliance check count, cross-referencing effort.] |
 | **Total** | **[total files]** | **[n–n days]** | **[n–n days]** | **[~n–n weeks (familiar) / ~n–n weeks (unfamiliar)]** |
 
 [After the table, state:]
