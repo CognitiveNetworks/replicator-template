@@ -406,6 +406,10 @@ Write it to `output/prd.md` using this structure:
 
 [Golden Signals, RED metrics, SLOs with error budgets. /ops/* SRE agent endpoints for diagnostics (health, metrics, config, dependencies, errors) and safe remediation (drain, cache flush, circuit reset, log level).]
 
+**Embedded Monitoring Removal:**
+
+Do **not** carry forward embedded, vendor-specific monitoring or alerting clients from the legacy codebase (e.g., PagerDuty SDK, Stackdriver client libraries, Datadog agent integrations, New Relic APM, custom StatsD emitters). The rebuilt application emits standardized telemetry via OpenTelemetry (OTEL) — metrics, traces, and structured logs — and exposes `/ops/*` diagnostic endpoints. Alerting, paging, and dashboard integrations are handled **externally** by the SRE agent and the platform's monitoring stack (e.g., Cloud Monitoring alerting policies, Prometheus Alertmanager). If the legacy application contains an embedded alerting client, document it in the feature-parity matrix as "Intentionally Dropped" with an explanation that alerting is now an infrastructure concern, not an application concern. Remove the dependency from `pyproject.toml` / `requirements.txt` and update `config.py`, `.env.example`, and all documentation accordingly.
+
 ## Auth & RBAC
 
 [Identity provider, roles (admin, operator, viewer at minimum), service-to-service auth with scoped IAM. Audit logging on sensitive operations.]
@@ -801,6 +805,23 @@ After the code is written, perform a line-by-line compliance check against every
 - [ ] Environment URLs are filled in for any deployed environments (use `[TODO]` only for environments not yet provisioned)
 
 If any item fails, fix it before proceeding. Do not defer compliance to a follow-up task.
+
+**Quality Gate Verification and Test Results Report:**
+
+After all compliance items pass, run the full quality suite and produce a test results report at `tests/TEST_RESULTS.md`. This file is a machine-verified proof that the codebase passes all quality gates. It must include:
+
+1. **Tool versions** — Python, pytest, linter, formatter, type checker versions used
+2. **Codebase metrics** — source file count, source line count, test file count, test line count
+3. **pytest output** — full verbose test output (`pytest -v --tb=short`), with pass/fail summary and breakdown by test suite
+4. **Linter output** — full lint results (e.g., `ruff check .`), must show 0 errors
+5. **Formatter output** — format check results (e.g., `ruff format --check .`), must show all files formatted
+6. **Type checker output** — strict type check results (e.g., `mypy src/`), must show 0 errors
+7. **Quality gate summary table** — one table showing each gate (tests, lint, format, types), threshold, result, and pass/fail status
+8. **Test coverage by module** — which source modules are covered by which test files
+9. **Bugs found and fixed** — any source or test bugs discovered during validation, with before/after descriptions
+10. **Not yet tested** — anything requiring running infrastructure (integration tests, Docker, DAPR sidecar) that cannot be validated offline
+
+This file serves as the build's quality receipt. If the report does not exist or shows failures, the build is not complete.
 
 ### Step 13: Documentation–Code Consistency Check
 
