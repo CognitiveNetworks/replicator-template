@@ -913,20 +913,26 @@ Write results to `output/summary-of-work.md` using this structure:
 
 ## Overview
 
-[2-3 paragraph executive summary. What was rebuilt, why, and what the outcome is.
-Include a grounded human time estimate for producing this work manually — broken
-down by phase (analysis, architecture/design, implementation, testing,
-compliance/docs) with total engineer-days range. Testing must be its own row —
-do not bundle it into implementation. Cite industry estimation frameworks (e.g.,
-McConnell's Code Complete, Capers Jones's Applied Software Measurement) if
-applicable. State the acceleration factor achieved by the automated process.
+[3 paragraph executive summary, structured as follows:
 
-Close with a "bottom line" paragraph that synthesizes three things for a
-non-technical reader: (1) how long the rebuild would take a human engineer,
-(2) how long it actually took with AI-driven automation, and (3) why the rebuilt
-codebase is more maintainable going forward (reduced lines, type safety,
-automated quality gates, observability, CI/CD enforcement). The goal is a
-self-contained executive summary a VP can read without scrolling.]
+Paragraph 1: What the legacy application was, its problems, and why it needed
+rebuilding.
+
+Paragraph 2: How the rebuild was executed (spec-driven automated process).
+
+Paragraph 3 ("Bottom line"): Synthesize three things for a non-technical reader:
+(1) how long the rebuild would take a human engineer, (2) how long it actually
+took with AI-driven automation, and (3) why the rebuilt codebase is more
+maintainable going forward (reduced lines, type safety, automated quality gates,
+observability, CI/CD enforcement). This paragraph goes here — before the estimate
+table — so a VP can read the executive summary without scrolling.
+
+After these paragraphs, include a grounded human time estimate table broken down
+by phase (analysis, architecture/design, implementation, testing, compliance/docs)
+with total engineer-days range. Testing must be its own row — do not bundle it
+into implementation. Cite industry estimation frameworks (e.g., McConnell's
+Code Complete, Capers Jones's Applied Software Measurement) if applicable.
+State the acceleration factor achieved by the automated process.]
 
 ## Spec-Driven Approach
 
