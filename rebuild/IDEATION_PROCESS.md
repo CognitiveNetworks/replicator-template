@@ -876,6 +876,64 @@ After any code change that adds, removes, or modifies API endpoints, verify that
 
 **Rule:** If an endpoint exists in code but not in docs, or exists in docs but not in code, the build is not complete.
 
+### Step 13a: Domain-Realistic Test Scenarios
+
+AI-generated tests often reveal themselves through generic test data (`"abc123"`, `"token"`, `"item-001"`) and class names that describe code paths rather than business flows. An engineer reviewing the test suite should see **domain expertise**, not placeholder-driven coverage.
+
+**Test Data Requirements:**
+
+- Use **realistic identifiers** from the problem domain. If the service handles IoT devices, tests should use real hardware model numbers, MAC-derived token hashes, production-format hostnames, realistic firmware versions, and properly formatted serial numbers. If it handles financial transactions, use realistic account numbers, currency codes, and transaction amounts.
+- **Never use `abc123`, `test-token`, `foo`, or `placeholder`** as test identifiers. If the real system processes 32-character hex tokens derived from MAC addresses, the test token should be a 32-character hex string.
+- Test data should make the **domain model self-documenting**. A reader should understand what the system processes by reading the test fixtures alone.
+
+**Test Naming and Structure:**
+
+- Test **class names** should describe a real-world scenario, not a code path. Use `TestDeviceCheckinLifecycle` instead of `TestControlEndpoint`. Use `TestNewUserOnboarding` instead of `TestPostEndpoint`.
+- Test **method docstrings** should tell the story of a client-to-server interaction: what the caller sends, what the service does, and what response the caller receives. Example: `"""Device sends first check-in → service returns retry interval while provisioning completes."""`
+- Test **method names** should describe the scenario from the caller's perspective: `test_new_device_first_checkin_gets_retry_interval` instead of `test_unknown_user_returns_200`.
+
+**Response Validation:**
+
+- Assert on **business-meaningful values**, not just status codes. If a client receives a retry interval, assert the specific interval value. If a client receives a redirect, assert the redirect URL contains the expected target hostname.
+- Validate response **shapes** against what the real client (device firmware, admin console, internal service) actually parses. If the client expects an INI-format or XML response, assert structural markers are present.
+
+**Why This Matters:**
+
+Code that uses realistic domain data passes the "engineer review" test — it looks like it was written by someone who understands the problem space, not by an AI that was given a spec. This is the difference between code that a team trusts and code that a team rewrites.
+
+### Step 13b: Docker Runtime Validation
+
+After unit tests pass and code is compliant, validate the full stack runs in Docker. This step catches categories of bugs that unit tests cannot: missing runtime dependencies, configuration mismatches, sidecar connectivity, and data store initialization.
+
+**Pre-flight Checklist:**
+
+1. `docker compose up --build -d` — all containers must start without errors
+2. All service containers must reach `healthy` status within their healthcheck `start_period`
+3. All sidecar containers (DAPR, Envoy, etc.) must be running
+4. All infrastructure containers (Redis, PostgreSQL, OTEL Collector) must be healthy
+
+**Common Docker Runtime Failures (fix before proceeding):**
+
+| Symptom | Root Cause | Fix |
+|---|---|---|
+| `executable not found in $PATH` (e.g., `opentelemetry-instrument`) | Package installed with `pip install --target` which doesn't create console scripts | Use `pip install --prefix=/install` in Dockerfile build stage |
+| Pydantic `SettingsError` on `list[str]` fields | `pydantic-settings` tries to JSON-parse env var strings as lists **before** field validators run | Use `str` type with `@property` that splits on comma |
+| Sidecar `TimeoutError` on health check | All services reading same default port from `.env` but each sidecar uses unique ports | Add per-service `DAPR_HTTP_PORT` / `DAPR_GRPC_PORT` overrides in docker-compose.yml |
+| Sidecar `NoCredentialProviders` errors | AWS/GCP bindings fail without cloud credentials in local dev | Add `ignoreErrors: true` to DAPR component specs for cloud-only bindings |
+| `httpx` / runtime dependency `ImportError` | Package listed in dev-only dependencies but used in production health checks | Move to main `[project.dependencies]` in `pyproject.toml` |
+| PostgreSQL `role does not exist` | Seed script uses wrong user/database | Match seed script credentials to `POSTGRES_USER`/`POSTGRES_DB` in docker-compose.yml |
+
+**Seed Data Validation:**
+
+- Seed data scripts (`scripts/seed_data.sh`) must seed **all** data stores — not just the primary database. If the application uses Redis, PostgreSQL, and an S3 bucket, the seed script must populate all three.
+- After seeding, verify data exists: `docker compose exec redis redis-cli -n 0 KEYS '*'`
+
+**Smoke Test Validation:**
+
+- Run the integration smoke test (`tests/integration/smoke_test.sh`) against the running stack
+- All smoke test endpoints must return expected HTTP status codes
+- **Smoke test `curl` commands must not use `-f` (fail) flag** when checking HTTP status codes — the `-f` flag causes `curl` to exit non-zero on 4xx/5xx responses, which triggers the fallback `|| echo "000"` and results in corrupted status codes like `401000` or `400000`
+
 ### Step 14: Observability Documentation — Service Metrics vs Application Metrics
 
 Every deployed service has **two distinct types of metrics**. Documentation must explain both and provide query examples for each:
